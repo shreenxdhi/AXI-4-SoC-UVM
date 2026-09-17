@@ -1,5 +1,6 @@
 // AXI4 SoC design
 
+// AXI4 PACKAGE
 package axi_pkg;
 
   parameter int AXI_ADDR_W = 32;
@@ -72,7 +73,7 @@ package axi_pkg;
 
 endpackage : axi_pkg
 
-
+// AXI4 INTERFACE
 interface axi_if (input logic aclk, input logic aresetn);
   import axi_pkg::*;
 
@@ -141,7 +142,7 @@ interface axi_if (input logic aclk, input logic aresetn);
 
 endinterface : axi_if
 
-
+// AXI4 SRAM SLAVE
 module axi_sram
   import axi_pkg::*;
 #(
@@ -309,7 +310,7 @@ module axi_sram
 
 endmodule : axi_sram
 
-
+// AXI ERROR-RESPONSE SLAVE
 module axi_err_slave
   import axi_pkg::*;
 (
@@ -378,7 +379,7 @@ module axi_err_slave
 
 endmodule : axi_err_slave
 
-
+// AXI ADDRESS-DECODING FABRIC
 module axi_fabric
   import axi_pkg::*;
 (
@@ -548,7 +549,7 @@ module axi_fabric
 
 endmodule : axi_fabric
 
-
+// DESIGN TOP LEVEL
 module soc_top
   import axi_pkg::*;
 (
