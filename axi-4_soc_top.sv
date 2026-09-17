@@ -1,6 +1,14 @@
-// AXI4 SoC design
+//==============================================================================
+// Simplified AXI4 Memory Subsystem
+//
+// This file contains the shared AXI definitions, interface, SRAM model,
+// error responder, address-routing fabric and design top level.
+//==============================================================================
 
-// AXI4 PACKAGE
+//==============================================================================
+// AXI definitions and address-map helpers
+//==============================================================================
+
 package axi_pkg;
 
   parameter int AXI_ADDR_W = 32;
@@ -73,7 +81,10 @@ package axi_pkg;
 
 endpackage : axi_pkg
 
-// AXI4 INTERFACE
+
+//==============================================================================
+// AXI interface and master/slave signal directions
+//==============================================================================
 interface axi_if (input logic aclk, input logic aresetn);
   import axi_pkg::*;
 
@@ -142,7 +153,10 @@ interface axi_if (input logic aclk, input logic aresetn);
 
 endinterface : axi_if
 
-// AXI4 SRAM SLAVE
+
+//==============================================================================
+// Byte-addressable SRAM slave
+//==============================================================================
 module axi_sram
   import axi_pkg::*;
 #(
@@ -310,7 +324,10 @@ module axi_sram
 
 endmodule : axi_sram
 
-// AXI ERROR-RESPONSE SLAVE
+
+//==============================================================================
+// DECERR slave for reserved and unmapped address regions
+//==============================================================================
 module axi_err_slave
   import axi_pkg::*;
 (
@@ -379,7 +396,10 @@ module axi_err_slave
 
 endmodule : axi_err_slave
 
-// AXI ADDRESS-DECODING FABRIC
+
+//==============================================================================
+// Address decoder and AXI channel router
+//==============================================================================
 module axi_fabric
   import axi_pkg::*;
 (
@@ -549,7 +569,10 @@ module axi_fabric
 
 endmodule : axi_fabric
 
-// DESIGN TOP LEVEL
+
+//==============================================================================
+// Memory-subsystem top level
+//==============================================================================
 module soc_top
   import axi_pkg::*;
 (

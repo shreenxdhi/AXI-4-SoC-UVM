@@ -1,9 +1,16 @@
-// AXI4 UVM testbench
+//==============================================================================
+// UVM Testbench for the Simplified AXI4 Memory Subsystem
+//
+// This file contains the transaction, master agent, reference model,
+// scoreboard, coverage collector, sequences, tests and simulation top.
+//==============================================================================
 import uvm_pkg::*;
 `include "uvm_macros.svh"
 import axi_pkg::*;
 
-// AXI TRANSACTION
+//==============================================================================
+// Transaction definition and random constraints
+//==============================================================================
 class axi_transaction extends uvm_sequence_item;
 
   typedef enum bit { AXI_READ, AXI_WRITE } direction_t;
@@ -115,7 +122,10 @@ class axi_transaction extends uvm_sequence_item;
 
 endclass : axi_transaction
 
-// AXI DRIVER
+
+//==============================================================================
+// AXI master driver
+//==============================================================================
 class axi_driver extends uvm_driver #(axi_transaction);
 
   virtual axi_if vif;
@@ -246,7 +256,10 @@ class axi_driver extends uvm_driver #(axi_transaction);
 
 endclass : axi_driver
 
-// AXI MONITOR
+
+//==============================================================================
+// AXI bus monitor
+//==============================================================================
 class axi_monitor extends uvm_monitor;
 
   virtual axi_if vif;
@@ -368,7 +381,10 @@ class axi_monitor extends uvm_monitor;
 
 endclass : axi_monitor
 
-// AXI MASTER AGENT
+
+//==============================================================================
+// Active AXI master agent
+//==============================================================================
 class axi_agent extends uvm_agent;
 
   axi_driver                       driver;
@@ -398,7 +414,10 @@ class axi_agent extends uvm_agent;
 
 endclass : axi_agent
 
-// REFERENCE MEMORY MODEL
+
+//==============================================================================
+// Byte-addressable reference memory
+//==============================================================================
 class axi_ref_model extends uvm_component;
 
   bit [7:0] mem [bit [AXI_ADDR_W-1:0]];
@@ -428,7 +447,10 @@ class axi_ref_model extends uvm_component;
 
 endclass : axi_ref_model
 
-// FUNCTIONAL COVERAGE
+
+//==============================================================================
+// Functional coverage collector
+//==============================================================================
 class axi_coverage extends uvm_subscriber #(axi_transaction);
 
   bit                  sample_dir;
@@ -517,7 +539,10 @@ class axi_coverage extends uvm_subscriber #(axi_transaction);
 
 endclass : axi_coverage
 
-// SCOREBOARD
+
+//==============================================================================
+// Response and read-data scoreboard
+//==============================================================================
 class axi_scoreboard extends uvm_scoreboard;
 
   axi_ref_model ref_model;
@@ -668,7 +693,10 @@ class axi_scoreboard extends uvm_scoreboard;
 
 endclass : axi_scoreboard
 
-// UVM ENVIRONMENT
+
+//==============================================================================
+// UVM environment
+//==============================================================================
 class axi_env extends uvm_env;
 
   axi_agent      agent;
@@ -696,7 +724,10 @@ class axi_env extends uvm_env;
 
 endclass : axi_env
 
-// UVM SEQUENCES
+
+//==============================================================================
+// Reusable directed and constrained-random sequences
+//==============================================================================
 class axi_base_seq extends uvm_sequence #(axi_transaction);
   `uvm_object_utils(axi_base_seq)
   function new(string name = "axi_base_seq"); super.new(name); endfunction
@@ -954,6 +985,9 @@ class axi_random_incr_seq extends axi_base_seq;
 endclass : axi_random_incr_seq
 
 
+//==============================================================================
+// UVM tests
+//==============================================================================
 class axi_base_test extends uvm_test;
 
   axi_env env;
@@ -1126,6 +1160,9 @@ class random_incr_test extends axi_base_test;
 endclass : random_incr_test
 
 
+//==============================================================================
+// Clock, reset, DUT connection and UVM simulation top
+//==============================================================================
 module tb_top;
 
   logic aclk;
