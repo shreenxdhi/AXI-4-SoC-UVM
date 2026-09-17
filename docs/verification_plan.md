@@ -65,7 +65,7 @@ causes the simulation to stop progressing.
 | Byte-lane operation | `incr_byte_burst_test` | Enabled byte values are retained | Available |
 | Halfword operation | `incr_halfword_burst_test` | Enabled halfwords are retained | Available |
 | Word operation | `incr_word_burst_test` | Full words are retained | Available |
-| Random address, size and length | `random_incr_test` | All paired reads match writes | Available |
+| Random address, size and length | `random_incr_test` | All paired reads match writes | Run and passed |
 | Peripheral `DECERR` | Future directed test | Write and read return `DECERR` | Planned |
 | Unmapped-address `DECERR` | Future directed test | Write and read return `DECERR` | Planned |
 
@@ -123,7 +123,37 @@ The 34.26% result is reasonable for a smoke test because it uses only aligned,
 single-beat, word-sized INCR traffic with `OKAY` responses. Other burst sizes,
 length groups, alignment cases and response types remain uncovered.
 
-## 7. Regression procedure
+## 7. Recorded random-test result
+
+The 100-pair constrained-random run used aligned INCR transactions within the
+SRAM region. Transfer size, burst length, address and transaction ID varied
+across the run.
+
+| Item | Recorded value |
+| --- | --- |
+| Simulator | Cadence Xcelium 25.03-s001 |
+| UVM library | CDNS-UVM 1.2 |
+| Test | `random_incr_test` |
+| Random pairs | 100 |
+| Seed | 1 |
+| Simulation end time | 36,365 ns |
+| Writes checked | 100 |
+| Reads checked | 100 |
+| Write beats | 574 |
+| Read beats | 574 |
+| Data mismatches | 0 |
+| Response mismatches | 0 |
+| Functional coverage | 58.33% |
+| UVM warnings/errors/fatals | 0 / 0 / 0 |
+| Overall result | Pass |
+
+This run covers all three supported transfer sizes and all four burst-length
+groups. Coverage remains below 100% because the sequence intentionally
+generates only aligned SRAM accesses with INCR bursts and `OKAY` responses.
+FIXED, WRAP, unaligned and error-response bins are therefore not covered by
+this test.
+
+## 8. Regression procedure
 
 For each test:
 
@@ -137,7 +167,7 @@ For each test:
 Random tests should be repeated with several seeds. Results must be recorded
 from actual runs rather than inferred from a single successful simulation.
 
-## 8. Completion criteria
+## 9. Completion criteria
 
 A test is considered passed when:
 

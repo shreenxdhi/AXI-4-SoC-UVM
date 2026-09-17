@@ -57,3 +57,48 @@ UVM_WARNING : 0
 UVM_ERROR   : 0
 UVM_FATAL   : 0
 ```
+
+## Random INCR test
+
+The constrained-random test was run with 100 write/read pairs using the
+default seed of 1. Every write was followed by a read using the same address,
+ID, burst length and transfer size.
+
+```text
+Test                    random_incr_test
+Random pairs            100
+Seed                    1
+Simulation time         36,365 ns
+Writes checked          100
+Reads checked           100
+Write beats             574
+Read beats              574
+Data mismatches         0
+Response mismatches     0
+Functional coverage     58.33%
+UVM warnings            0
+UVM errors              0
+UVM fatals              0
+Result                  PASS
+```
+
+The run exercised byte, halfword and word transfers with burst lengths from
+one to sixteen beats. All generated addresses were aligned and remained
+inside the SRAM range.
+
+Use the following EDA Playground options to reproduce this run:
+
+```text
+-access +rw -coverage all +UVM_TESTNAME=random_incr_test +RANDOM_PAIRS=100
+```
+
+The final report should contain:
+
+```text
+SCOREBOARD: writes=100 reads=100 mismatches=0
+FUNCTIONAL COVERAGE: 58.33%
+*** TEST PASSED ***
+UVM_WARNING : 0
+UVM_ERROR   : 0
+UVM_FATAL   : 0
+```

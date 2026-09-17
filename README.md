@@ -108,16 +108,16 @@ For 100 constrained-random write/read pairs:
 The scoreboard summary, functional coverage and UVM severity counts are
 printed near the end of the simulator output.
 
-## Recorded result
+## Recorded results
 
-A smoke test was run on Cadence Xcelium 25.03-s001 with the default seed of 1.
-It completed four writes and four reads with no data or response mismatches.
-The UVM report contained zero warnings, errors and fatals. Functional coverage
-for this small directed test was 34.26%.
+The smoke and 100-pair random tests were run on Cadence Xcelium 25.03-s001 with
+the default seed of 1. Both runs completed with no data or response mismatches
+and no UVM warnings, errors or fatals.
 
-| Test | Seed | Writes | Reads | Data mismatches | Response mismatches | Coverage | Result |
+| Test | Seed | Writes | Reads | Write/read beats | Mismatches | Coverage | Result |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |
-| `smoke_test` | 1 | 4 | 4 | 0 | 0 | 34.26% | Pass |
+| `smoke_test` | 1 | 4 | 4 | 4 / 4 | 0 | 34.26% | Pass |
+| `random_incr_test` | 1 | 100 | 100 | 574 / 574 | 0 | 58.33% | Pass |
 
 See [results/README.md](results/README.md) for the simulator and run details.
 
