@@ -3,6 +3,7 @@ import uvm_pkg::*;
 `include "uvm_macros.svh"
 import axi_pkg::*;
 
+// AXI TRANSACTION
 class axi_transaction extends uvm_sequence_item;
 
   typedef enum bit { AXI_READ, AXI_WRITE } direction_t;
@@ -114,7 +115,7 @@ class axi_transaction extends uvm_sequence_item;
 
 endclass : axi_transaction
 
-
+// AXI DRIVER
 class axi_driver extends uvm_driver #(axi_transaction);
 
   virtual axi_if vif;
@@ -245,7 +246,7 @@ class axi_driver extends uvm_driver #(axi_transaction);
 
 endclass : axi_driver
 
-
+// AXI MONITOR
 class axi_monitor extends uvm_monitor;
 
   virtual axi_if vif;
@@ -367,7 +368,7 @@ class axi_monitor extends uvm_monitor;
 
 endclass : axi_monitor
 
-
+// AXI MASTER AGENT
 class axi_agent extends uvm_agent;
 
   axi_driver                       driver;
@@ -397,7 +398,7 @@ class axi_agent extends uvm_agent;
 
 endclass : axi_agent
 
-
+// REFERENCE MEMORY MODEL
 class axi_ref_model extends uvm_component;
 
   bit [7:0] mem [bit [AXI_ADDR_W-1:0]];
@@ -427,7 +428,7 @@ class axi_ref_model extends uvm_component;
 
 endclass : axi_ref_model
 
-
+// FUNCTIONAL COVERAGE
 class axi_coverage extends uvm_subscriber #(axi_transaction);
 
   bit                  sample_dir;
@@ -516,7 +517,7 @@ class axi_coverage extends uvm_subscriber #(axi_transaction);
 
 endclass : axi_coverage
 
-
+// SCOREBOARD
 class axi_scoreboard extends uvm_scoreboard;
 
   axi_ref_model ref_model;
@@ -667,7 +668,7 @@ class axi_scoreboard extends uvm_scoreboard;
 
 endclass : axi_scoreboard
 
-
+// UVM ENVIRONMENT
 class axi_env extends uvm_env;
 
   axi_agent      agent;
@@ -695,7 +696,7 @@ class axi_env extends uvm_env;
 
 endclass : axi_env
 
-
+// UVM SEQUENCES
 class axi_base_seq extends uvm_sequence #(axi_transaction);
   `uvm_object_utils(axi_base_seq)
   function new(string name = "axi_base_seq"); super.new(name); endfunction
