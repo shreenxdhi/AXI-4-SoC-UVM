@@ -166,12 +166,12 @@ address through the same burst-address helper the RTL uses.
 
 ## 9. SystemVerilog Assertions
 
-`axi_sva.sv` is attached through a `bind` statement (`axi_sva_bind.sv`).
-Xcelium rejects binding a module into an interface type (`*E,CUINMI`), so
-the bind targets `tb_top` and samples through the `axi_bus` interface
-instance — every protocol transaction crosses that port, so checking power
-is unchanged. The RTL and interface files stay untouched. Failures are
-reported through `uvm_error`, so they fail the test verdict.
+`axi_sva.sv` is attached through a `bind` statement in `axi_sva_bind.sv`.
+Xcelium does not allow binding a module into an interface type, so the bind
+targets `tb_top` and reads the signals through the `axi_bus` interface
+instance. Every transaction passes through that instance, so the same traffic
+is checked. The RTL and interface files stay untouched, and failures are
+reported through `uvm_error` so they fail the test.
 
 | Group | Properties |
 | --- | --- |
@@ -195,18 +195,18 @@ reported through `uvm_error`, so they fail the test verdict.
 | Response | `OKAY`, `DECERR` |
 | Crosses | burst×size, burst×length, dir×burst, dir×size, size×alignment, dir×response |
 
-Architecturally unreachable cells (`SLVERR`, WRAP×1 beat, byte×unaligned) are
-`ignore_bins`-excluded with justifications in `axi_coverage.sv`. The
-recorded 85.01% ceiling is a stimulus gap — error bursts are only ever
-word-aligned INCR — closable by randomizing the error-sequence dimensions
-(rationale in [results/README.md](results/README.md)).
+Cells that the protocol can never reach (`SLVERR`, WRAP with one beat, byte
+with unaligned) are removed with `ignore_bins` and explained in
+`axi_coverage.sv`. The recorded 85.01% is a stimulus gap rather than a checker
+limit: the error bursts are only ever word-aligned INCR, so some crosses stay
+open. The reasoning is in [results/README.md](results/README.md).
 
 ---
 
 ## 11. Verification Results
 
-Recorded on Cadence Xcelium 25.03-s001, CDNS-UVM 1.2, default seed 1 —
-nine full regression runs, all passed:
+Recorded on Cadence Xcelium 25.03-s001, CDNS-UVM 1.2, seed 1. Nine regression
+runs, all passed:
 
 | Test | Transactions | Mismatches | Coverage | Result |
 | --- | --- | --- | --- | --- |
@@ -220,11 +220,11 @@ nine full regression runs, all passed:
 | `coverage_max_test` | 108 W + 108 R (598 / 601 beats) | 0 | 85.01% | PASS |
 | `axi_stress_test` (`+STRESS_PAIRS=100`) | 120 W + 120 R (639 / 654 beats) | 0 | 85.01% | PASS |
 
-Aggregate across the nine runs: **674 transactions / 3,685 beats checked, 0
-mismatches, 0 UVM warnings/errors/fatals, 0 SVA failures**. The two
-composite runs alone (`coverage_max_test`, `axi_stress_test`) verify 228 W +
-228 R with zero divergence. See [results/README.md](results/README.md) for
-per-test evidence and the coverage-ceiling analysis.
+Across the nine runs that is 674 transactions and 3,685 beats checked, with no
+mismatches, no UVM warnings, errors or fatals, and no assertion failures. The
+two composite runs, `coverage_max_test` and `axi_stress_test`, cover 228 write
+and 228 read transactions between them. Per-test detail and the coverage
+analysis are in [results/README.md](results/README.md).
 
 ---
 
@@ -305,7 +305,7 @@ xrun rtl/axi_pkg.sv rtl/axi_if.sv rtl/axi_sva.sv rtl/axi_sram.sv \
 | Scoreboard mismatches | 0 |
 | UVM warnings / errors / fatals | 0 / 0 / 0 |
 | Protocol assertions | 21, active in every test, 0 failures |
-| Functional coverage recorded | 85.01% (gap analyzed as stimulus-side, see results) |
+| Functional coverage recorded | 85.01% (remaining gap is stimulus-side, see results) |
 
 The environment separates stimulus, driving, monitoring, reference-model
 checking, protocol assertions and functional coverage from the AXI4 RTL.
