@@ -22,6 +22,7 @@ possible to add tests without changing the DUT or the main checking logic.
 | `axi_scoreboard` | Checks response codes and read data |
 | `axi_coverage` | Samples protocol features and cross coverage |
 | `axi_env` | Connects the agent, scoreboard and coverage collector |
+| `axi_sva` (bound) | Concurrent SVA property checks on every AXI channel of the interface |
 
 ## 3. Checking strategy
 
@@ -51,8 +52,24 @@ The driver and monitor check:
 - `WLAST` only on the final write beat
 - `RLAST` only on the final read beat
 
+In addition, `rtl/axi_sva.sv` provides 21 concurrent assertions attached to
+every `axi_if` instance through the `bind` statement in
+`rtl/axi_sva_bind.sv`, so no RTL or interface code is modified:
+
+| Group | Checked rules |
+| --- | --- |
+| Handshake stability | AW, AR, W, B and R payloads remain unchanged while VALID is high and READY is low; VALID is not dropped before the handshake |
+| Burst legality | Burst type never the reserved `2'b11`; WRAP only with 2/4/8/16 beats; WRAP start address aligned to the transfer size |
+| Byte lanes | `WSTRB` never all-zero; first-beat strobes respect the address byte offset (unaligned rule); aligned first beat stays inside its natural byte window |
+| Beat counting | Write and read beats never exceed `LEN+1`; `WLAST`/`RLAST` asserted exactly on the final beat |
+| Response sanity | No `BVALID`/`RVALID` without an outstanding request; responses restricted to `OKAY`/`DECERR` |
+
+Assertion failures are reported through `uvm_error`, so they raise the
+`UVM_ERROR` count and fail the test verdict.
+
 The global watchdog ends the test with a fatal error if a handshake problem
-causes the simulation to stop progressing.
+causes the simulation to stop progressing. Its limit defaults to 2 ms and can
+be overridden with `+TIMEOUT_NS=<ns>` for very long stress runs.
 
 ## 4. Test plan
 
@@ -66,8 +83,14 @@ causes the simulation to stop progressing.
 | Halfword operation | `incr_halfword_burst_test` | Enabled halfwords are retained | Available |
 | Word operation | `incr_word_burst_test` | Full words are retained | Available |
 | Random address, size and length | `random_incr_test` | All paired reads match writes | Run and passed |
-| Peripheral `DECERR` | Future directed test | Write and read return `DECERR` | Planned |
+| FIXED burst operation | `fixed_burst_test` | Every beat reads from the same address | Available |
+| WRAP burst operation | `wrap_burst_test` | Beat addresses wrap inside the aligned 4-beat window | Available |
+| Unaligned transfer | `unaligned_burst_test` | Byte lanes are retained across unaligned beats | Available |
+| Peripheral `DECERR` | `err_response_test` | Write and read return `DECERR` | Available |
 | Unmapped-address `DECERR` | Future directed test | Write and read return `DECERR` | Planned |
+| Long-duration endurance | `axi_stress_test` | 1,000 random pairs plus directed markers, zero mismatches, all SVA checks hold | Available |
+| Full coverage regression | `coverage_max_test` | Directed plus random mix, zero mismatches | Available |
+
 
 “Available” means that the test is present in the source. It is not marked as
 completed here until its simulator output has been saved and reviewed.
@@ -83,9 +106,10 @@ The coverage collector samples each completed transaction.
 | Transfer size | Byte, halfword, word |
 | Burst length | 1, 2–4, 5–8, 9–16 beats |
 | Alignment | Aligned, unaligned |
-| Response | `OKAY`, `SLVERR`, `DECERR` |
+| Response | `OKAY`, `DECERR` (`SLVERR` unreachable, `ignore_bins`) |
 
-The following crosses are collected:
+The following crosses are collected (with the architecturally unreachable
+`WRAP`×1-beat and `byte`×unaligned cells excluded):
 
 - Burst type × transfer size
 - Burst type × burst length
@@ -119,10 +143,6 @@ The supplied EDA Playground log records the following run:
 | UVM warnings/errors/fatals | 0 / 0 / 0 |
 | Overall result | Pass |
 
-The 34.26% result is reasonable for a smoke test because it uses only aligned,
-single-beat, word-sized INCR traffic with `OKAY` responses. Other burst sizes,
-length groups, alignment cases and response types remain uncovered.
-
 ## 7. Recorded random-test result
 
 The 100-pair constrained-random run used aligned INCR transactions within the
@@ -143,7 +163,7 @@ across the run.
 | Read beats | 574 |
 | Data mismatches | 0 |
 | Response mismatches | 0 |
-| Functional coverage | 58.33% |
+| Functional coverage | 62.20% |
 | UVM warnings/errors/fatals | 0 / 0 / 0 |
 | Overall result | Pass |
 
@@ -152,6 +172,15 @@ groups. Coverage remains below 100% because the sequence intentionally
 generates only aligned SRAM accesses with INCR bursts and `OKAY` responses.
 FIXED, WRAP, unaligned and error-response bins are therefore not covered by
 this test.
+
+The directed tests `fixed_burst_test`, `wrap_burst_test`,
+`unaligned_burst_test` and `err_response_test` were added to close exactly
+those remaining bins, and all four have since been recorded as passing runs
+on Xcelium. `coverage_max_test`, which replays the whole mix in one
+simulation, recorded 85.01% functional coverage with zero mismatches and
+zero assertion failures. The residual gap is a stimulus-side limitation
+(error bursts are generated only as word-aligned INCR), analyzed in
+[results/README.md](../results/README.md).
 
 ## 8. Regression procedure
 
@@ -173,6 +202,7 @@ A test is considered passed when:
 
 - the sequence completes before the watchdog timeout;
 - the scoreboard reports no data or response mismatch;
+- no `axi_sva` assertion fires;
 - the UVM summary reports zero errors and fatals; and
 - the expected transactions appear in the scoreboard counts.
 
