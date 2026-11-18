@@ -90,6 +90,7 @@ be overridden with `+TIMEOUT_NS=<ns>` for very long stress runs.
 | Unmapped-address `DECERR` | Future directed test | Write and read return `DECERR` | Planned |
 | Long-duration endurance | `axi_stress_test` | 1,000 random pairs plus directed markers, zero mismatches, all SVA checks hold | Available |
 | Full coverage regression | `coverage_max_test` | Directed plus random mix, zero mismatches | Available |
+| Coverage closure | `coverage_closure_test` | Burst and alignment sweep, 100% of scored cells | Available |
 
 
 “Available” means that the test is present in the source. It is not marked as
@@ -178,9 +179,15 @@ The directed tests `fixed_burst_test`, `wrap_burst_test`,
 those remaining bins, and all four have since been recorded as passing runs
 on Xcelium. `coverage_max_test`, which replays the whole mix in one
 simulation, recorded 85.01% functional coverage with zero mismatches and
-zero assertion failures. The residual gap is a stimulus-side limitation
-(error bursts are generated only as word-aligned INCR), analyzed in
-[results/README.md](../results/README.md).
+zero assertion failures.
+
+The remaining gap is stimulus-side: the FIXED and WRAP tests are both
+four-beat word bursts, and the unaligned test starts on a halfword boundary,
+so `burst_x_size`, `burst_x_length` and `size_x_alignment` keep cells open.
+`coverage_closure_test` closes them by replaying the `coverage_max_test`
+traffic, sweeping FIXED and WRAP across every size and length group, and
+adding unaligned word and halfword bursts. It records 100.00% functional
+coverage, as shown in [results/README.md](../results/README.md).
 
 ## 8. Regression procedure
 

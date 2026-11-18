@@ -26,12 +26,13 @@ xrun -Q -unbuffered -timescale 1ns/1ns -sysv -access +rw -coverage all \
 | `random_incr_test` | `+RANDOM_PAIRS=100` | 100 / 100 | 574 / 574 | 0 | 0 / 0 | 62.20% | 36,365 ns | PASS |
 | `coverage_max_test` | none | 108 / 108 | 598 / 601 | 0 | 0 / 0 | 85.01% | 37,275 ns | PASS |
 | `axi_stress_test` | `+STRESS_PAIRS=100 +TIMEOUT_NS=10000000` | 120 / 120 | 639 / 654 | 0 | 0 / 0 | 85.01% | 40,085 ns | PASS |
-| **Total (9 runs)** | | **337 / 337** | **1,832 / 1,853** | **0** | **0 / 0** | | | |
+| `coverage_closure_test` | none | 137 / 137 | 789 / 792 | 0 | 0 / 0 | 100.00% | 49,495 ns | PASS |
+| **Total (10 runs)** | | **474 / 474** | **2,621 / 2,645** | **0** | **0 / 0** | | | |
 
 No run produced a warning, error or fatal, and none of the 21 bound AXI
 assertions fired. Those assertions cover handshake stability, valid stability,
 WLAST/RLAST position, the 4 KB beat-bound rule, WRAP alignment and the first and
-last beat byte lanes, and they were active in all nine runs.
+last beat byte lanes, and they were active in all ten runs.
 
 ---
 
@@ -111,6 +112,22 @@ FUNCTIONAL COVERAGE: 85.01%          *** TEST PASSED ***      40,085 ns
 Stress run completed 100 random write/read pairs at time 40085
 ```
 
+### coverage_closure_test
+Replays everything `coverage_max_test` does, then sweeps FIXED and WRAP bursts
+across all three transfer sizes and all four length groups from `0x800`, and
+adds two unaligned 4-beat INCR bursts, one word at `0xF01` and one halfword at
+`0xF03`. The FIXED/WRAP sweep starts each burst at a `size`-aligned address and
+skips WRAP with a single beat, which the protocol does not allow.
+
+```text
+SCOREBOARD: writes=137 reads=137 mismatches=0
+FUNCTIONAL COVERAGE: 100.00%         *** TEST PASSED ***      49,495 ns
+```
+
+Every scored cell in the covergroup is now hit. The three `ignore_bins` cells
+remain excluded because the protocol cannot reach them: `SLVERR`, WRAP with one
+beat, and byte with unaligned.
+
 ---
 
 ## 3. Protocol assertions
@@ -125,23 +142,24 @@ of the runs above had one.
 
 ---
 
-## 4. Why coverage stops at 85.01%
+## 4. Closing the last bins
 
 The covergroup has six coverpoints and six crosses, about 94 scored cells. Three
 cells can never be hit and are removed with `ignore_bins`: the `SLVERR` bin,
-WRAP with one beat, and byte with unaligned. The rest of the gap to 100% is a
-stimulus limitation, not a limit of the checker.
+WRAP with one beat, and byte with unaligned.
 
-The fabric sends every unmapped address to `axi_err_slave`, so `DECERR` does
-appear on the monitored interface, and `err_response_test` checks it. The issue
-is that the error bursts are always word-aligned INCR, and the only unaligned
-traffic is halfword INCR reads. So the cells left open are the crosses that
-combine `DECERR` with other sizes or lengths, and the write with unaligned
-cells.
+The directed tests leave crosses open because each one only generates a single
+shape of traffic: the FIXED and WRAP tests are both 4-beat word bursts, and the
+unaligned test is a halfword burst that starts on a halfword boundary, so it is
+aligned for its size. `coverage_max_test` inherits that limitation and records
+85.01%.
 
-Closing them needs testbench changes rather than RTL changes: randomize the
-length, size and burst of the error sequences, add an unaligned write pattern,
-and re-run `coverage_max_test`. Until that is done, 85.01% is the number we
-report. The cells removed with `ignore_bins` are unreachable by the protocol
-itself, while the cells still open are simply not produced by the current
-stimulus, and these two cases are kept separate.
+`coverage_closure_test` closes the rest from the testbench, with no RTL change:
+it replays the `coverage_max_test` traffic, sweeps FIXED and WRAP across byte,
+halfword and word size at every length group, and adds unaligned word and
+halfword INCR bursts. That covers `burst_x_size`, `burst_x_length` and
+`size_x_alignment` completely and takes the covergroup to 100.00%.
+
+The cells removed with `ignore_bins` are unreachable by the protocol itself,
+while the per-test gaps are simply traffic that the earlier sequences did not
+produce, and these two cases are kept separate.

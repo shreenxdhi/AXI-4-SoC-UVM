@@ -143,9 +143,10 @@ startup.
 | `unaligned_burst_test` | Unaligned halfword INCR | Byte-offset strobing |
 | `err_response_test` | Peripheral-region write/read | `DECERR` path |
 | `axi_stress_test` | 1,000 random pairs + directed markers | Endurance, long-run ordering |
-| `coverage_max_test` | Full directed + random mix | Close every reachable bin in one run |
+| `coverage_max_test` | Full directed + random mix | Combine the directed traffic in one run |
+| `coverage_closure_test` | `coverage_max_test` + burst sweep + unaligned | Close every reachable bin |
 
-All 14 tests share one reusable environment and scoreboard.
+All 15 tests share one reusable environment and scoreboard.
 
 ---
 
@@ -197,15 +198,17 @@ reported through `uvm_error` so they fail the test.
 
 Cells that the protocol can never reach (`SLVERR`, WRAP with one beat, byte
 with unaligned) are removed with `ignore_bins` and explained in
-`axi_coverage.sv`. The recorded 85.01% is a stimulus gap rather than a checker
-limit: the error bursts are only ever word-aligned INCR, so some crosses stay
-open. The reasoning is in [results/README.md](results/README.md).
+`axi_coverage.sv`. `coverage_closure_test` reaches 100.00% of the scored
+cells: it replays the `coverage_max_test` traffic, sweeps FIXED and WRAP across
+every size and length group, and adds unaligned word and halfword bursts. The
+per-test numbers and the reasoning are in
+[results/README.md](results/README.md).
 
 ---
 
 ## 11. Verification Results
 
-Recorded on Cadence Xcelium 25.03-s001, CDNS-UVM 1.2, seed 1. Nine regression
+Recorded on Cadence Xcelium 25.03-s001, CDNS-UVM 1.2, seed 1. Ten regression
 runs, all passed:
 
 | Test | Transactions | Mismatches | Coverage | Result |
@@ -219,12 +222,13 @@ runs, all passed:
 | `random_incr_test` (`+RANDOM_PAIRS=100`) | 100 W + 100 R (574 / 574 beats) | 0 | 62.20% | PASS |
 | `coverage_max_test` | 108 W + 108 R (598 / 601 beats) | 0 | 85.01% | PASS |
 | `axi_stress_test` (`+STRESS_PAIRS=100`) | 120 W + 120 R (639 / 654 beats) | 0 | 85.01% | PASS |
+| `coverage_closure_test` | 137 W + 137 R (789 / 792 beats) | 0 | 100.00% | PASS |
 
-Across the nine runs that is 674 transactions and 3,685 beats checked, with no
+Across the ten runs that is 948 transactions and 5,266 beats checked, with no
 mismatches, no UVM warnings, errors or fatals, and no assertion failures. The
-two composite runs, `coverage_max_test` and `axi_stress_test`, cover 228 write
-and 228 read transactions between them. Per-test detail and the coverage
-analysis are in [results/README.md](results/README.md).
+composite runs cover 365 write and 365 read transactions between them.
+Per-test detail and the coverage analysis are in
+[results/README.md](results/README.md).
 
 ---
 
@@ -300,12 +304,12 @@ xrun rtl/axi_pkg.sv rtl/axi_if.sv rtl/axi_sva.sv rtl/axi_sram.sv \
 
 | Result | Value |
 | --- | --- |
-| Regression runs recorded | 9 tests, all PASS |
-| Transactions verified | 674 (3,685 beats) |
+| Regression runs recorded | 10 tests, all PASS |
+| Transactions verified | 948 (5,266 beats) |
 | Scoreboard mismatches | 0 |
 | UVM warnings / errors / fatals | 0 / 0 / 0 |
 | Protocol assertions | 21, active in every test, 0 failures |
-| Functional coverage recorded | 85.01% (remaining gap is stimulus-side, see results) |
+| Functional coverage recorded | 100.00% of the scored covergroup cells |
 
 The environment separates stimulus, driving, monitoring, reference-model
 checking, protocol assertions and functional coverage from the AXI4 RTL.

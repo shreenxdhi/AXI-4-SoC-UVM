@@ -387,3 +387,57 @@ class axi_stress_test extends axi_base_test;
                 num_pairs, $time), UVM_NONE)
   endfunction
 endclass : axi_stress_test
+
+// Replays coverage_max_test and adds the bursts that the directed tests do not
+// generate: FIXED and WRAP at byte, halfword and word size over every length
+// group, plus unaligned word and halfword INCR bursts.
+class coverage_closure_test extends coverage_max_test;
+  `uvm_component_utils(coverage_closure_test)
+
+  function new(string name = "coverage_closure_test",
+               uvm_component parent = null);
+    super.new(name, parent);
+  endfunction
+
+  task run_bursts(bit [AXI_ADDR_W-1:0] base);
+    axi_burst_write_read_seq b;
+    int unsigned         lens[5]  = '{1, 2, 4, 8, 16};
+    burst_t              kinds[2] = '{BURST_FIXED, BURST_WRAP};
+    bit [AXI_ADDR_W-1:0] a = base;
+
+    foreach (kinds[k])
+      for (int sz = 0; sz <= 2; sz++)
+        foreach (lens[l]) begin
+          // WRAP is only legal with 2, 4, 8 or 16 beats.
+          if (kinds[k] == BURST_WRAP && lens[l] == 1) continue;
+          b = axi_burst_write_read_seq::type_id::create("b");
+          b.m_burst       = kinds[k];
+          b.transfer_size = sz;
+          b.burst_length  = lens[l];
+          b.start_addr    = a;
+          b.axi_id        = (k * 15 + sz * 5 + l) % 16;
+          b.start(env.agent.sequencer);
+          a += 32'h0100;
+        end
+  endtask
+
+  task run_unaligned(bit [AXI_ADDR_W-1:0] addr, bit [2:0] size,
+                     bit [AXI_ID_W-1:0] id);
+    axi_unaligned_write_read_seq u;
+    u = axi_unaligned_write_read_seq::type_id::create("u");
+    u.start_addr    = addr;
+    u.transfer_size = size;
+    u.burst_length  = 4;
+    u.axi_id        = id;
+    u.start(env.agent.sequencer);
+  endtask
+
+  task run_phase(uvm_phase phase);
+    phase.raise_objection(this);
+    super.run_phase(phase);
+    run_bursts(SRAM_BASE + 32'h0800);
+    run_unaligned(SRAM_BASE + 32'h0F01, 2, 4'hB);
+    run_unaligned(SRAM_BASE + 32'h0F03, 1, 4'hC);
+    phase.drop_objection(this);
+  endtask
+endclass : coverage_closure_test

@@ -95,8 +95,9 @@ module axi_sva
 
   a_aw_wrap_align: assert property (
     awvalid |-> (awburst != BURST_WRAP) ||
-                ((awsize == 1 && awaddr[0]   == 1'b0) ||
-                 (awsize == 2 && awaddr[1:0] == 2'b00)))
+                (awsize == 0) ||
+                (awsize == 1 && awaddr[0]   == 1'b0) ||
+                (awsize == 2 && awaddr[1:0] == 2'b00))
     else `uvm_error("AXI_SVA", $sformatf("WRAP burst from unaligned addr 0x%08h",
                                          awaddr))
 
